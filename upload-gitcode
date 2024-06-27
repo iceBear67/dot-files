@@ -1,0 +1,57 @@
+#!/bin/bash
+
+if [[ -z "$1" ]]; then
+    echo 'Usage: $SCRIPT <filename> [ext]'
+    echo "[!!] File is not supplied."
+    exit -2
+fi
+
+FILE_NAME=$(basename $1)
+
+if [[ -d "$1" ]]; then
+  echo "[!!] $FILE_NAME is a directory."
+  exit -2
+elif [[ ! -e "$1" ]]; then
+  echo "[!!] $FILE_NAME isn't exist."
+  exit -2
+fi
+
+if [[ -z "$2" ]]; then
+  FILE_EXT=${FILE_NAME##*.}
+else
+  FILE_EXT="$2"
+fi
+#echo "[+] Uploading $FILE_NAME with ext $FILE_EXT"
+
+OBJECT_KEY="$(openssl rand -hex 6)/$FILE_NAME"
+#echo "[!] Object Key: $OBJECT_KEY File: $FILE_NAME Ext: $FILE_EXT"
+
+RESP_1=$(curl -s -X POST 'https://gitcode-image-bed.sisiovo.workers.dev/api/v1/obs/image' -H 'Content-Type: application/json' -d "{
+  \"object_key\": \"$OBJECT_KEY\",
+  \"file_type\": \"$FILE_EXT\",
+  \"is_avatar\": true,
+  \"content_type\": \"image/png\"
+}")
+
+UPLOAD_URL=$(echo $RESP_1 | jq "keys[0]" | tr -d '"')
+
+if [ -n $UPLOAD_URL ]; then
+  # Upload
+  RESP_2=$(curl -X PUT $UPLOAD_URL \
+    --progress-bar \
+    -H 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Edg/126.0.0.0' \
+    -H 'Content-Type: image/png' \
+    -H 'Referer: https://gitcode.com/' \
+    -H 'X-Obs-Acl: public-read' --data-binary @$1 > /dev/null)
+    if $RESP_2; then
+      IMG_URL="$(echo $RESP_1 | jq '.[] | .["cdn-img-addr"]' | tr -d '"')"
+      echo $IMG_URL
+      exit 0
+    else
+      echo "[!!] Upload Failed"
+      exit -1
+    fi
+else
+  echo "[!!] Cannot fetch UPLOAD_URL"
+  exit -1
+fi
