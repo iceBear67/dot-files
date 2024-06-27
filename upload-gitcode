@@ -26,7 +26,7 @@ fi
 OBJECT_KEY="$(openssl rand -hex 6)/$FILE_NAME"
 #echo "[!] Object Key: $OBJECT_KEY File: $FILE_NAME Ext: $FILE_EXT"
 
-RESP_1=$(curl -s -X POST 'https://gitcode-image-bed.sisiovo.workers.dev/api/v1/obs/image' -H 'Content-Type: application/json' -d "{
+RESP_1=$(curl -s -X POST 'https://gitcode-image-bed.b23.buzz/api/v1/obs/image' -H 'Content-Type: application/json' -d "{
   \"object_key\": \"$OBJECT_KEY\",
   \"file_type\": \"$FILE_EXT\",
   \"is_avatar\": true,
